@@ -3,17 +3,20 @@ name: Predictive Maintenance Pipeline
 on:
   push:
     branches:
-      - main   # Trigger workflow on push to the main branch
+      - main  # Trigger workflow on push to the main branch
 
 jobs:
   # -----------------------------
-  # 1️⃣ Register Dataset on Hugging Face Hub
+  #Register Dataset on Hugging Face Hub
   # -----------------------------
   register-dataset:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
+
+      - name: List repo files
+        run: ls -R predictive_maintenance_project
 
       - name: Install Dependencies
         run: pip install -r predictive_maintenance_project/requirements.txt
@@ -24,7 +27,7 @@ jobs:
         run: python predictive_maintenance_project/data_preparation/data_register.py
 
   # -----------------------------
-  # 2️⃣ Data Preparation
+  # Data Preparation
   # -----------------------------
   data-prep:
     needs: register-dataset
@@ -32,6 +35,9 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
+
+      - name: List repo files
+        run: ls -R predictive_maintenance_project
 
       - name: Install Dependencies
         run: pip install -r predictive_maintenance_project/requirements.txt
@@ -42,7 +48,7 @@ jobs:
         run: python predictive_maintenance_project/data_preparation/prep.py
 
   # -----------------------------
-  #  Model Building and MLflow Tracking
+  #Model Building and MLflow Tracking
   # -----------------------------
   model-training:
     needs: data-prep
@@ -50,6 +56,9 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
+
+      - name: List repo files
+        run: ls -R predictive_maintenance_project
 
       - name: Install Dependencies
         run: pip install -r predictive_maintenance_project/requirements.txt
@@ -65,7 +74,7 @@ jobs:
         run: python predictive_maintenance_project/model_building/train.py
 
   # -----------------------------
-  #  Deployment to Hugging Face Space
+  #Deployment to Hugging Face Space
   # -----------------------------
   deploy-hosting:
     needs: [model-training, data-prep, register-dataset]
@@ -73,6 +82,9 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
+
+      - name: List repo files
+        run: ls -R predictive_maintenance_project
 
       - name: Install Dependencies
         run: pip install -r predictive_maintenance_project/requirements.txt
