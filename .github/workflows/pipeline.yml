@@ -1,0 +1,83 @@
+name: Predictive Maintenance Pipeline
+
+on:
+  push:
+    branches:
+      - main   # Trigger workflow on push to the main branch
+
+jobs:
+  # -----------------------------
+  # 1️⃣ Register Dataset on Hugging Face Hub
+  # -----------------------------
+  register-dataset:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Install Dependencies
+        run: pip install -r predictive_maintenance_project/requirements.txt
+
+      - name: Upload Dataset to Hugging Face Hub
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: python predictive_maintenance_project/data_preparation/data_register.py
+
+  # -----------------------------
+  # 2️⃣ Data Preparation
+  # -----------------------------
+  data-prep:
+    needs: register-dataset
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Install Dependencies
+        run: pip install -r predictive_maintenance_project/requirements.txt
+
+      - name: Run Data Preparation
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: python predictive_maintenance_project/data_preparation/prep.py
+
+  # -----------------------------
+  #  Model Building and MLflow Tracking
+  # -----------------------------
+  model-training:
+    needs: data-prep
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Install Dependencies
+        run: pip install -r predictive_maintenance_project/requirements.txt
+
+      - name: Start MLflow Server
+        run: |
+          nohup mlflow ui --host 0.0.0.0 --port 5000 &
+          sleep 5
+
+      - name: Train and Log Model with MLflow
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: python predictive_maintenance_project/model_building/train.py
+
+  # -----------------------------
+  #  Deployment to Hugging Face Space
+  # -----------------------------
+  deploy-hosting:
+    needs: [model-training, data-prep, register-dataset]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Install Dependencies
+        run: pip install -r predictive_maintenance_project/requirements.txt
+
+      - name: Deploy Streamlit App to Hugging Face Space
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: python predictive_maintenance_project/hosting/hosting.py
